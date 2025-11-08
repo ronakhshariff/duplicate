@@ -1,71 +1,37 @@
-# Burrowly
+# Neighbourly
 
-AI-Powered Neighborhood Resilience Network - Connecting people in need with nearby helpers to build safer, more inclusive, resilient, and sustainable communities.
+Community resilience network - basically an app where neighbors can help each other out. Someone needs help moving? Post a request. Someone needs groceries? Post a request. You get the idea.
 
-## Getting Started
+## What's This?
 
-### Prerequisites
+Full stack app with:
+- **Frontend** - React + Vite (in `src/`)
+- **Backend** - Serverless AWS backend (in `backend/`)
 
-- Node.js (v18 or higher)
-- npm or yarn
+Everything is serverless so it scales automatically and costs basically nothing for small usage.
 
-### Installation
+## Quick Start
 
-1. Install dependencies:
+### Frontend
 ```bash
 npm install
-```
-
-2. Start the development server:
-```bash
 npm run dev
 ```
+Frontend runs at `http://localhost:3000`
 
-3. Open your browser and navigate to `http://localhost:3000`
-
-## Features
-
-- 🎨 Beautiful, modern UI with accessibility features
-- 📱 Fully responsive design (mobile-first)
-- ♿ Accessibility support (high contrast, font size controls, screen reader friendly)
-- 🌍 Multi-language ready
-- 🚀 Built with React and Vite for fast development
-
-## Project Structure
-
-```
-Burrowly/
-├── src/
-│   ├── App.jsx          # Main application component
-│   ├── App.css          # Application styles
-│   ├── main.jsx         # Application entry point
-│   └── index.css        # Global styles and CSS variables
-├── index.html           # HTML template
-├── package.json         # Dependencies and scripts
-└── vite.config.js       # Vite configuration
-```
-
-## Development
-
-The app runs on `localhost:3000` by default. The development server includes hot module replacement for instant updates.
-
-## Build
-
-To create a production build:
-
+### Backend
 ```bash
-npm run build
+cd backend
+npm install
+npm run dev
 ```
+Backend runs at `http://localhost:3000/dev/` (different port or use proxy)
 
-The built files will be in the `dist` directory.
+## Structure
 
-## Accessibility
+- `src/` - frontend code (React)
+- `backend/src/` - backend code (Lambda handlers)
+- `backend/docs/` - api documentation
+- `backend/serverless.yml` - aws config
 
-Burrowly is designed with accessibility in mind:
-
-- High contrast mode toggle
-- Adjustable font sizes
-- Screen reader friendly
-- Keyboard navigation support
-- Semantic HTML structure
-
+Check out `backend/README.md` for backend details.

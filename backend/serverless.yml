@@ -1,0 +1,527 @@
+service: neighbourly-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  memorySize: 256
+  timeout: 30
+  environment:
+    STAGE: ${self:provider.stage}
+    REGION: ${self:provider.region}
+    TABLE_NAME: ${self:custom.tableName}
+    USER_POOL_ID: ${self:custom.userPoolId}
+    USER_POOL_CLIENT_ID: ${self:custom.userPoolClientId}
+    S3_BUCKET: ${self:custom.s3Bucket}
+    OPENWEATHER_API_KEY: ${env:OPENWEATHER_API_KEY, ''} # TODO: add this to env vars
+    SNS_TOPIC_ARN: ${self:custom.snsTopicArn}
+    PLACE_INDEX_NAME: ${self:custom.placeIndexName}
+    IOT_TOPIC: neighbourly/sensors
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          Resource:
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.tableName}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.tableName}/index/*"
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:PutObject
+          - s3:DeleteObject
+          Resource: "arn:aws:s3:::${self:custom.s3Bucket}/*"
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource: "arn:aws:s3:::${self:custom.s3Bucket}"
+        - Effect: Allow
+          Action:
+          - comprehend:DetectSentiment
+          - comprehend:DetectEntities
+          - translate:TranslateText
+          - rekognition:DetectLabels
+          - rekognition:DetectText
+          Resource: "*" # hack: using * for now, should restrict later
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:ListUsers
+          Resource: "arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}"
+        - Effect: Allow
+          Action:
+          - sns:Publish
+          Resource:
+            Ref: NotificationsTopic
+        - Effect: Allow
+          Action:
+          - dynamodb:DescribeStream
+          - dynamodb:GetRecords
+          - dynamodb:GetShardIterator
+          - dynamodb:ListStreams
+          Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.tableName}/stream/*"
+        - Effect: Allow
+          Action:
+          - geo:SearchPlaceIndexForText
+          - geo:SearchPlaceIndexForPosition
+          - geo:SearchPlaceIndexForSuggestions
+          Resource: "arn:aws:geo:${self:provider.region}:*:place-index/${self:custom.placeIndexName}"
+        - Effect: Allow
+          Action:
+          - cloudwatch:PutMetricData
+          Resource: "*"
+        - Effect: Allow
+          Action:
+          - iot:Publish
+          - iot:Connect
+          Resource: "arn:aws:iot:${self:provider.region}:*:topic/neighbourly/*"
+        - Effect: Allow
+          Action:
+          - events:PutEvents
+          Resource: "*"
+
+custom:
+  tableName: neighbourly-${self:provider.stage}
+  userPoolId: ${env:COGNITO_USER_POOL_ID, ''} # need to set this
+  userPoolClientId: ${env:COGNITO_USER_POOL_CLIENT_ID, ''}
+  s3Bucket: neighbourly-uploads-${self:provider.stage}
+  snsTopicName: neighbourly-notifications-${self:provider.stage}
+  snsTopicArn:
+    Ref: NotificationsTopic
+  placeIndexName: neighbourly-place-index-${self:provider.stage}
+  # TODO: figure out if we need these
+  apiGateway:
+    restApiId: ${env:API_GATEWAY_ID, ''}
+    restApiRootResourceId: ${env:API_GATEWAY_ROOT_RESOURCE_ID, ''}
+
+functions:
+  # basic health check, no auth needed
+  health:
+    handler: src/handlers/health.healthCheck
+    events:
+      - http:
+          path: /
+          method: get
+          cors: true
+
+  # main request endpoints - start with these
+  createRequest:
+    handler: src/handlers/requests.createRequest
+    events:
+      - http:
+          path: /requests
+          method: post
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  getRequests:
+    handler: src/handlers/requests.getRequests
+    events:
+      - http:
+          path: /requests
+          method: get
+          cors: true
+          # TODO: maybe make this public? or add optional auth
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  getRequest:
+    handler: src/handlers/requests.getRequest
+    events:
+      - http:
+          path: /requests/{requestId}
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  acceptRequest:
+    handler: src/handlers/requests.acceptRequest
+    events:
+      - http:
+          path: /requests/{requestId}/accept
+          method: post
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId} # this works for now
+
+  updateRequestStatus:
+    handler: src/handlers/requests.updateRequestStatus
+    events:
+      - http:
+          path: /requests/{requestId}/status
+          method: put
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  # user profile endpoints
+  getCurrentUser:
+    handler: src/handlers/users.getCurrentUser
+    events:
+      - http:
+          path: /users/me
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  updateCurrentUser:
+    handler: src/handlers/users.updateCurrentUser
+    events:
+      - http:
+          path: /users/me
+          method: put
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  # messaging between users
+  sendMessage:
+    handler: src/handlers/messaging.sendMessageHandler
+    events:
+      - http:
+          path: /requests/{requestId}/messages
+          method: post
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  getMessages:
+    handler: src/handlers/messaging.getMessagesHandler
+    events:
+      - http:
+          path: /requests/{requestId}/messages
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  # notifications system
+  getNotifications:
+    handler: src/handlers/notifications.getNotifications
+    events:
+      - http:
+          path: /notifications
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  markNotificationRead:
+    handler: src/handlers/notifications.markAsRead
+    events:
+      - http:
+          path: /notifications/{notificationId}/read
+          method: put
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  getUnreadCount:
+    handler: src/handlers/notifications.getUnreadCountHandler
+    events:
+      - http:
+          path: /notifications/unread-count
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  # image upload stuff
+  uploadImage:
+    handler: src/handlers/storage.uploadImage
+    events:
+      - http:
+          path: /upload
+          method: post
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  getPresignedUrl:
+    handler: src/handlers/storage.getPresignedUrl
+    events:
+      - http:
+          path: /upload/presigned
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  # AI endpoints
+  analyzeImage:
+    handler: src/handlers/ai.analyzeImageHandler
+    events:
+      - http:
+          path: /ai/analyze-image
+          method: post
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  translateText:
+    handler: src/handlers/ai.translateText
+    events:
+      - http:
+          path: /ai/translate
+          method: post
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  # weather alerts
+  getWeatherAlerts:
+    handler: src/handlers/weather.getWeatherAlerts
+    events:
+      - http:
+          path: /weather/alerts
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  # admin stuff - might need different auth later
+  getStats:
+    handler: src/handlers/admin.getStats
+    events:
+      - http:
+          path: /admin/stats
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  getHeatmapData:
+    handler: src/handlers/admin.getHeatmapData
+    events:
+      - http:
+          path: /admin/heatmap
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  # location service endpoints - geocoding and maps
+  geocode:
+    handler: src/handlers/location.geocode
+    events:
+      - http:
+          path: /location/geocode
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  reverseGeocode:
+    handler: src/handlers/location.reverseGeocodeHandler
+    events:
+      - http:
+          path: /location/reverse-geocode
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  searchPlaces:
+    handler: src/handlers/location.searchPlacesHandler
+    events:
+      - http:
+          path: /location/search
+          method: get
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: arn:aws:cognito-idp:${self:provider.region}:*:userpool/${self:custom.userPoolId}
+
+  # iot handler - processes sensor data and creates requests automatically
+  processIoTEvent:
+    handler: src/handlers/iot.processIoTEvent
+    events:
+      - eventBridge:
+          pattern:
+            source:
+              - iot-sensor
+            detail-type:
+              - Sensor Alert
+    timeout: 60 # might take longer for ai processing
+
+  # dynamodb stream handler - triggers when requests are updated
+  processDynamoDBStream:
+    handler: src/handlers/streams.processDynamoDBStream
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt:
+              - NeighbourlyTable
+              - StreamArn
+          batchSize: 10
+          startingPosition: LATEST
+
+resources:
+  Resources:
+    # SNS topic for push notifications
+    NotificationsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.snsTopicName}
+        DisplayName: Neighbourly Notifications
+
+    # DynamoDB table with streams enabled
+    NeighbourlyTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: GSI1PK
+                KeyType: HASH
+              - AttributeName: GSI1SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES # need old and new to detect changes
+
+    # Amazon Location Service Place Index for geocoding
+    PlaceIndex:
+      Type: AWS::Location::PlaceIndex
+      Properties:
+        IndexName: ${self:custom.placeIndexName}
+        DataSource: Esri # using Esri data source (free tier)
+        Description: Place index for geocoding addresses and reverse geocoding coordinates
+
+    # CloudWatch Dashboard for monitoring costs and performance
+    MonitoringDashboard:
+      Type: AWS::CloudWatch::Dashboard
+      Properties:
+        DashboardName: Neighbourly-${self:provider.stage}
+        DashboardBody: |
+          {
+            "widgets": [
+              {
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["Neighbourly", "RequestsCreated", { "stat": "Sum" }],
+                    ["Neighbourly", "RequestsCompleted", { "stat": "Sum" }]
+                  ],
+                  "period": 300,
+                  "stat": "Sum",
+                  "region": "${self:provider.region}",
+                  "title": "Request Metrics"
+                }
+              },
+              {
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["AWS/Lambda", "Invocations", { "stat": "Sum" }],
+                    ["AWS/Lambda", "Duration", { "stat": "Average" }],
+                    ["AWS/Lambda", "Errors", { "stat": "Sum" }]
+                  ],
+                  "period": 300,
+                  "region": "${self:provider.region}",
+                  "title": "Lambda Performance"
+                }
+              },
+              {
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["AWS/DynamoDB", "ConsumedReadCapacityUnits", { "stat": "Sum" }],
+                    ["AWS/DynamoDB", "ConsumedWriteCapacityUnits", { "stat": "Sum" }]
+                  ],
+                  "period": 300,
+                  "region": "${self:provider.region}",
+                  "title": "DynamoDB Usage (Cost Tracking)"
+                }
+              },
+              {
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["Neighbourly", "APILatency", { "stat": "Average" }]
+                  ],
+                  "period": 300,
+                  "region": "${self:provider.region}",
+                  "title": "API Latency"
+                }
+              }
+            ]
+          }
+
+plugins:
+  - serverless-offline # for local dev
+  - serverless-plugin-typescript # compiles ts to js
+
