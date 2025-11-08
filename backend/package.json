@@ -14,16 +14,16 @@
     "start": "serverless offline"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.490.0",
-    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/client-cloudwatch": "^3.927.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.490.0",
     "@aws-sdk/client-comprehend": "^3.490.0",
-    "@aws-sdk/client-translate": "^3.490.0",
+    "@aws-sdk/client-dynamodb": "^3.490.0",
+    "@aws-sdk/client-iot-data-plane": "^3.927.0",
+    "@aws-sdk/client-location": "^3.927.0",
     "@aws-sdk/client-rekognition": "^3.490.0",
-    "@aws-sdk/client-sns": "^3.490.0",
-    "@aws-sdk/client-location": "^3.490.0",
-    "@aws-sdk/client-cloudwatch": "^3.490.0",
-    "@aws-sdk/client-iot-data-plane": "^3.490.0",
+    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/client-sns": "^3.927.0",
+    "@aws-sdk/client-translate": "^3.490.0",
     "@aws-sdk/lib-dynamodb": "^3.490.0",
     "@aws-sdk/s3-request-presigner": "^3.490.0",
     "date-fns": "^2.30.0",
@@ -43,4 +43,3 @@
     "typescript": "^5.3.3"
   }
 }
-

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import './App.css'
 import burrowlyLogo from './neighbourly_logo.PNG?url'
 import binooLogo from './binoo.PNG?url'
+import BackendTest from './components/BackendTest'
 
 function App() {
   const [scrollY, setScrollY] = useState(0)
@@ -791,6 +792,9 @@ function App() {
           <button className="cta-button" onClick={handleGetStarted}>Get Started</button>
         </div>
       </section>
+
+      {/* Backend Connection Test - Remove this after testing */}
+      <BackendTest />
 
       <footer className="footer">
         <div className="footer-container">
