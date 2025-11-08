@@ -3,7 +3,7 @@
 import { CloudWatchClient, PutMetricDataCommand, Dimension } from '@aws-sdk/client-cloudwatch';
 
 const cloudwatch = new CloudWatchClient({ region: process.env.REGION || 'us-east-1' });
-const NAMESPACE = 'Neighbourly';
+const NAMESPACE = 'Burrowly';
 
 // sends custom metrics to cloudwatch for monitoring
 // we use this to track costs and performance

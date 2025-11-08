@@ -1,4 +1,4 @@
-# Neighbourly
+# Burrowly
 
 Community resilience network - basically an app where neighbors can help each other out. Someone needs help moving? Post a request. Someone needs groceries? Post a request. You get the idea.
 

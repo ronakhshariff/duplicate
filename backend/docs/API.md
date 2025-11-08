@@ -1,4 +1,4 @@
-# Neighbourly API Reference
+# Burrowly API Reference
 
 Quick reference for frontend integration. All endpoints require Cognito auth unless noted.
 
@@ -18,7 +18,7 @@ Authorization: Bearer YOUR_COGNITO_TOKEN
 ```json
 {
   "status": "ok",
-  "message": "Neighbourly API is running",
+  "message": "Burrowly API is running",
   "baseUrl": "/dev",
   "endpoints": { ... }
 }

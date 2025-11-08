@@ -11,7 +11,7 @@ export const healthCheck = async (
     },
     body: JSON.stringify({
       status: 'ok',
-      message: 'Neighbourly API is running',
+      message: 'Burrowly API is running',
       baseUrl: event.requestContext?.path?.replace('/', '') || '/dev',
       endpoints: {
         requests: '/requests',

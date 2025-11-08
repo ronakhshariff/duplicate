@@ -7,7 +7,7 @@ exports.generateImageKey = generateImageKey;
 const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const s3Client = new client_s3_1.S3Client({ region: process.env.REGION || 'us-east-1' });
-const BUCKET_NAME = process.env.S3_BUCKET || 'neighbourly-uploads-dev';
+const BUCKET_NAME = process.env.S3_BUCKET || 'burrowly-uploads-dev';
 async function uploadToS3(key, body, contentType) {
     await s3Client.send(new client_s3_1.PutObjectCommand({
         Bucket: BUCKET_NAME,

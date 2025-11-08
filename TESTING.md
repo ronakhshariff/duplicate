@@ -25,7 +25,7 @@ Expected response:
 ```json
 {
   "status": "ok",
-  "message": "Neighbourly API is running",
+  "message": "Burrowly API is running",
   "baseUrl": "/dev",
   "endpoints": {
     "requests": "/requests",

@@ -9,7 +9,7 @@ const location_1 = require("../utils/location");
 const ai_1 = require("../utils/ai");
 const weather_1 = require("../utils/weather");
 const iotClient = new client_iot_data_plane_1.IoTDataPlaneClient({ region: process.env.REGION || 'us-east-1' });
-const IOT_TOPIC = process.env.IOT_TOPIC || 'neighbourly/sensors';
+const IOT_TOPIC = process.env.IOT_TOPIC || 'burrowly/sensors';
 // handles IoT sensor data and automatically creates requests
 // e.g. flood sensor detects water -> creates emergency request
 const processIoTEvent = async (event) => {

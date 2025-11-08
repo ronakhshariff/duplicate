@@ -10,7 +10,7 @@ const client_dynamodb_1 = require("@aws-sdk/client-dynamodb");
 const lib_dynamodb_1 = require("@aws-sdk/lib-dynamodb");
 const client = new client_dynamodb_1.DynamoDBClient({ region: process.env.REGION || 'us-east-1' });
 exports.docClient = lib_dynamodb_1.DynamoDBDocumentClient.from(client);
-exports.TABLE_NAME = process.env.TABLE_NAME || 'neighbourly-dev';
+exports.TABLE_NAME = process.env.TABLE_NAME || 'burrowly-dev';
 async function putItem(item) {
     await exports.docClient.send(new lib_dynamodb_1.PutCommand({
         TableName: exports.TABLE_NAME,

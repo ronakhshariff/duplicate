@@ -1,7 +1,7 @@
 {
-  "name": "neighbourly-backend",
+  "name": "burrowly-backend",
   "version": "1.0.0",
-  "description": "Serverless backend for Neighbourly - Community Resilience Network",
+  "description": "Serverless backend for Burrowly - Community Resilience Network",
   "main": "index.js",
   "scripts": {
     "deploy": "serverless deploy",

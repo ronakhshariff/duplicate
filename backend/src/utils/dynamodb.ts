@@ -4,7 +4,7 @@ import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCom
 const client = new DynamoDBClient({ region: process.env.REGION || 'us-east-1' });
 export const docClient = DynamoDBDocumentClient.from(client);
 
-export const TABLE_NAME = process.env.TABLE_NAME || 'neighbourly-dev';
+export const TABLE_NAME = process.env.TABLE_NAME || 'burrowly-dev';
 
 // using single table design - everything in one table, partitioned by city#region
 export interface RequestItem {

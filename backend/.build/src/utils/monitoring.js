@@ -10,7 +10,7 @@ exports.trackCostMetric = trackCostMetric;
 // helps us see how much we're spending and if things are slow
 const client_cloudwatch_1 = require("@aws-sdk/client-cloudwatch");
 const cloudwatch = new client_cloudwatch_1.CloudWatchClient({ region: process.env.REGION || 'us-east-1' });
-const NAMESPACE = 'Neighbourly';
+const NAMESPACE = 'Burrowly';
 // sends custom metrics to cloudwatch for monitoring
 // we use this to track costs and performance
 async function putMetric(metricName, value, unit = 'Count', dimensions) {

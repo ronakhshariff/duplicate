@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import './App.css'
-import burrowlyLogo from './neighbourly_logo.PNG?url'
+import burrowlyLogo from './burrowly_logo.PNG?url'
 import binooLogo from './binoo.PNG?url'
 import BackendTest from './components/BackendTest'
 

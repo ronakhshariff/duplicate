@@ -1,6 +1,6 @@
-# Cost Analysis - Neighbourly Backend
+# Cost Analysis - Burrowly Backend
 
-Cost projection for running Neighbourly at scale. All services stay within free tier for small usage, and scale cost-effectively.
+Cost projection for running Burrowly at scale. All services stay within free tier for small usage, and scale cost-effectively.
 
 ## Free Tier Coverage (First Year)
 

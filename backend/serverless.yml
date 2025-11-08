@@ -1,4 +1,4 @@
-service: neighbourly-backend
+service: burrowly-backend
 
 frameworkVersion: '3'
 
@@ -19,7 +19,7 @@ provider:
     OPENWEATHER_API_KEY: ${env:OPENWEATHER_API_KEY, ''} # TODO: add this to env vars
     SNS_TOPIC_ARN: ${self:custom.snsTopicArn}
     PLACE_INDEX_NAME: ${self:custom.placeIndexName}
-    IOT_TOPIC: neighbourly/sensors
+        IOT_TOPIC: burrowly/sensors
   iam:
     role:
       statements:
@@ -83,21 +83,21 @@ provider:
           Action:
           - iot:Publish
           - iot:Connect
-          Resource: "arn:aws:iot:${self:provider.region}:*:topic/neighbourly/*"
+              Resource: "arn:aws:iot:${self:provider.region}:*:topic/burrowly/*"
         - Effect: Allow
           Action:
           - events:PutEvents
           Resource: "*"
 
 custom:
-  tableName: neighbourly-${self:provider.stage}
-  userPoolId: ${env:COGNITO_USER_POOL_ID, ''} # need to set this
-  userPoolClientId: ${env:COGNITO_USER_POOL_CLIENT_ID, ''}
-  s3Bucket: neighbourly-uploads-${self:provider.stage}
-  snsTopicName: neighbourly-notifications-${self:provider.stage}
-  snsTopicArn:
-    Ref: NotificationsTopic
-  placeIndexName: neighbourly-place-index-${self:provider.stage}
+      tableName: burrowly-${self:provider.stage}
+      userPoolId: ${env:COGNITO_USER_POOL_ID, ''} # need to set this
+      userPoolClientId: ${env:COGNITO_USER_POOL_CLIENT_ID, ''}
+      s3Bucket: burrowly-uploads-${self:provider.stage}
+      snsTopicName: burrowly-notifications-${self:provider.stage}
+      snsTopicArn:
+        Ref: NotificationsTopic
+      placeIndexName: burrowly-place-index-${self:provider.stage}
   # TODO: figure out if we need these
   apiGateway:
     restApiId: ${env:API_GATEWAY_ID, ''}
@@ -406,9 +406,9 @@ functions:
       - stream:
           type: dynamodb
           arn:
-            Fn::GetAtt:
-              - NeighbourlyTable
-              - StreamArn
+                Fn::GetAtt:
+                  - BurrowlyTable
+                  - StreamArn
           batchSize: 10
           startingPosition: LATEST
 
@@ -419,10 +419,10 @@ resources:
       Type: AWS::SNS::Topic
       Properties:
         TopicName: ${self:custom.snsTopicName}
-        DisplayName: Neighbourly Notifications
+            DisplayName: Burrowly Notifications
 
     # DynamoDB table with streams enabled
-    NeighbourlyTable:
+    BurrowlyTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${self:custom.tableName}
@@ -465,17 +465,17 @@ resources:
     MonitoringDashboard:
       Type: AWS::CloudWatch::Dashboard
       Properties:
-        DashboardName: Neighbourly-${self:provider.stage}
+            DashboardName: Burrowly-${self:provider.stage}
         DashboardBody: |
           {
             "widgets": [
               {
                 "type": "metric",
                 "properties": {
-                  "metrics": [
-                    ["Neighbourly", "RequestsCreated", { "stat": "Sum" }],
-                    ["Neighbourly", "RequestsCompleted", { "stat": "Sum" }]
-                  ],
+                      "metrics": [
+                        ["Burrowly", "RequestsCreated", { "stat": "Sum" }],
+                        ["Burrowly", "RequestsCompleted", { "stat": "Sum" }]
+                      ],
                   "period": 300,
                   "stat": "Sum",
                   "region": "${self:provider.region}",
@@ -510,9 +510,9 @@ resources:
               {
                 "type": "metric",
                 "properties": {
-                  "metrics": [
-                    ["Neighbourly", "APILatency", { "stat": "Average" }]
-                  ],
+                      "metrics": [
+                        ["Burrowly", "APILatency", { "stat": "Average" }]
+                      ],
                   "period": 300,
                   "region": "${self:provider.region}",
                   "title": "API Latency"

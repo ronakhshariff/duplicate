@@ -2,7 +2,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } fro
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const s3Client = new S3Client({ region: process.env.REGION || 'us-east-1' });
-const BUCKET_NAME = process.env.S3_BUCKET || 'neighbourly-uploads-dev';
+const BUCKET_NAME = process.env.S3_BUCKET || 'burrowly-uploads-dev';
 
 export async function uploadToS3(key: string, body: Buffer, contentType: string): Promise<string> {
   await s3Client.send(new PutObjectCommand({

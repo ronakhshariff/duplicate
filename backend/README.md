@@ -1,4 +1,4 @@
-# Neighbourly Backend
+# Burrowly Backend
 
 Serverless backend built on AWS. All the code lives here.
 
